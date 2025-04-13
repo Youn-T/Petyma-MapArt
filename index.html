@@ -82,7 +82,7 @@ document.getElementById("uploader").addEventListener("change", function(event) {
         const rgb = (r,g,b)
         let nearest = couleurProche(rgb,palette)
 
-        pixelString += `${correspondances[palette.indexOf(nearest)]}`;
+        pixelString += `( ${nearest[0]}, ${nearest[1]}, ${nearest[2]} ) `;
       }
 
       document.getElementById("output").textContent = pixelString;
