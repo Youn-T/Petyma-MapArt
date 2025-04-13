@@ -1,99 +1,126 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
-  <meta charset="UTF-8">
-  <title>Pixels en chaîne</title>
+    <meta charset="UTF-8">
+    <title>Pixels en chaîne</title>
 </head>
+
 <body>
 
-<h2>Uploader une image</h2>
-<input type="file" id="uploader" accept="image/*">
-<pre id="output" style="white-space:pre-wrap; max-height:400px; overflow:auto;"></pre>
+    <h2>Uploader une image</h2>
+    <input type="file" id="uploader" accept="image/*">
+    <pre id="output" style="white-space:pre-wrap; max-height:400px; overflow:auto;"></pre>
 
-<canvas id="canvas" style="display:none;"></canvas>
+    <canvas id="canvas" style="display:none;"></canvas>
 
-<script>
-function distanceRGB(c1, c2) {
-  return Math.sqrt(
-    Math.pow(c1[0] - c2[0], 2) +
-    Math.pow(c1[1] - c2[1], 2) +
-    Math.pow(c1[2] - c2[2], 2)
-  );
-}
+    <script>
+        function distanceRGB(c1, c2) {
+            return Math.sqrt(
+                Math.pow(c1[0] - c2[0], 2) +
+                Math.pow(c1[1] - c2[1], 2) +
+                Math.pow(c1[2] - c2[2], 2)
+            );
+        }
 
-function couleurProche(couleurUtilisateur, palette) {
-  let couleurLaPlusProche = palette[0];
-  let distanceMin = distanceRGB(couleurUtilisateur, couleurLaPlusProche);
+        function couleurProche(couleurUtilisateur, palette) {
+            let couleurLaPlusProche = palette[0];
+            let distanceMin = distanceRGB(couleurUtilisateur, couleurLaPlusProche);
+            console.log(`${couleurUtilisateur} - ${couleurLaPlusProche}`)
+            for (let i = 1; i < palette.length; i++) {
+                const dist = distanceRGB(couleurUtilisateur, palette[i]);
+                if (dist < distanceMin) {
+                    distanceMin = dist;
+                    couleurLaPlusProche = palette[i];
+                }
+            }
 
-  for (let i = 1; i < palette.length; i++) {
-    const dist = distanceRGB(couleurUtilisateur, palette[i]);
-    if (dist < distanceMin) {
-      distanceMin = dist;
-      couleurLaPlusProche = palette[i];
-    }
-  }
+            return couleurLaPlusProche;
+        }
 
-  return couleurLaPlusProche;
-}
+        const palette = [
+            [255, 0, 0],
+            [0, 255, 0],
+            [0, 0, 255],
+            [0, 0, 0],
+            [255, 255, 255]
+        ]
 
-const palette = [
-    (255,0,0),
-    (0,255,0),
-    (0,0,255),
-    (0,0,0),
-    (255,255,255)
-]
+        const correspondances = [
+            "minecraft:red_wool",
+            "minecraft:green_wool",
+            "minecraft:blue_wool",
+            "minecraft:black_wool",
+            "minecraft:white_wool"
 
-const correspondances = [
-    "minecraft:red_wool",
-    "minecraft:green_wool",
-    "minecraft:blue_wool",
-    "minecraft:black_wool",
-    "minecraft:white_wool"
+        ]
 
-]
+        document.getElementById("uploader").addEventListener("change", function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-document.getElementById("uploader").addEventListener("change", function(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+            const reader = new FileReader();
 
-  const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    const canvas = document.getElementById("canvas");
+                    const ctx = canvas.getContext("2d");
 
-  reader.onload = function(e) {
-    const img = new Image();
-    img.onload = function() {
-      const canvas = document.getElementById("canvas");
-      const ctx = canvas.getContext("2d");
+                    canvas.width = img.width;
+                    canvas.height = img.height;
 
-      canvas.width = img.width;
-      canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
 
-      ctx.drawImage(img, 0, 0);
+                    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                    const data = imageData.data;
 
-      const imageData = ctx.getImageData(0, 0, img.width, img.height);
-      const data = imageData.data;
+                    let pixel = { size:img.width, blocks: []};
 
-      let pixelString = "";
+                    //   for (let i = 0; i < data.length; i += 4) {
+                    // const r = data[i];
+                    // const g = data[i + 1];
+                    // const b = data[i + 2];
+                    // const rgb = [r, g, b]
+                    // let nearest = couleurProche(rgb, palette)
 
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const rgb = (r,g,b)
-        let nearest = couleurProche(rgb,palette)
+                    // pixel += `( ${nearest[0]}, ${nearest[1]}, ${nearest[2]} ) `;
+                    //   }
+                    let last_block = ""
+                    let cnt = 0
+                    for (let x = 0; x < data.length; x += img.width*4) {
+                        for (let y = 0; y < img.height*4; y += 4) {
+                            const r = data[x+y];
+                            const g = data[x+y+1];
+                            const b = data[x+y+2];
+                            const rgb = [r, g, b]
+                            let nearest = couleurProche(rgb, palette)
+                            let block = correspondances[palette.indexOf(nearest)]
+                            if (block == last_block) {
+                                cnt += 1
+                            } else {
+                                pixel.blocks.push([last_block ,cnt])
 
-        pixelString += `( ${nearest[0]}, ${nearest[1]}, ${nearest[2]} ) `;
-      }
+                                last_block = block
+                                cnt = 1
+                            }
 
-      document.getElementById("output").textContent = pixelString;
-    };
 
-    img.src = e.target.result;
-  };
+                            // pixel.push({type: block, coord:{x: x/4/img.width,y: 200,z: y/4}})
+                            // pixelString += `( ${nearest[0]}, ${nearest[1]}, ${nearest[2]} ) `;
+                        }
+                    }
+                    pixelString = JSON.stringify(pixel)
+                    document.getElementById("output").textContent = pixelString;
+                };
 
-  reader.readAsDataURL(file);
-});
-</script>
+                img.src = e.target.result;
+            };
+
+            reader.readAsDataURL(file);
+        });
+    </script>
 
 </body>
+
 </html>
