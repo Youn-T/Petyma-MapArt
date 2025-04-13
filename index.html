@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Pixels en chaîne</title>
+</head>
+<body>
+
+<h2>Uploader une image</h2>
+<input type="file" id="uploader" accept="image/*">
+<pre id="output" style="white-space:pre-wrap; max-height:400px; overflow:auto;"></pre>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+document.getElementById("uploader").addEventListener("change", function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      ctx.drawImage(img, 0, 0);
+
+      const imageData = ctx.getImageData(0, 0, img.width, img.height);
+      const data = imageData.data;
+
+      let pixelString = "";
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        pixelString += `(${r},${g},${b})`;
+      }
+
+      document.getElementById("output").textContent = pixelString;
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(file);
+});
+</script>
+
+</body>
+</html>
